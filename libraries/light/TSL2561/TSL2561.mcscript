@@ -159,6 +159,7 @@ Class TSL2561
     
     Public Sub New(addr As Byte)
         gI2C = I2c.Create(I2C_HiGH_SPEED, Pin.SCL, Pin.SDA, addr)
+        Thread.Sleep(25000)
         gAddr = New ListOfByte()
         gData = New ListOfByte()
         _tsl2561IntegrationTime = TSL2561_INTEGRATIONTIME_13MS 
@@ -216,7 +217,7 @@ Class TSL2561
     ' Adjusts the gain on the TSL2561 (adjusts the sensitivity to light)
     '
     Public Sub setGain(gain As Byte)
-        If _tsl2561Initialized <> True Then
+        If  Not (_tsl2561Initialized) Then
             begin()
         End If
 
@@ -338,17 +339,18 @@ Class TSL2561
         ' Make sure the sensor isn't saturated!
         ' Get the correct scale depending on the intergration time
         Dim clipThreshold As Integer
-        If _tsl2561IntegrationTime = TSL2561_INTEGRATIONTIME_13MS Then
-            clipThreshold = TSL2561_CLIPPING_13MS
-            chScale = TSL2561_LUX_CHSCALE_TINT0
-        ElseIf _tsl2561IntegrationTime = TSL2561_INTEGRATIONTIME_101MS Then
-            clipThreshold = TSL2561_CLIPPING_101MS
-            chScale = TSL2561_LUX_CHSCALE_TINT1
-        ElseIf _tsl2561IntegrationTime = TSL2561_INTEGRATIONTIME_402MS Then 
-            clipThreshold = TSL2561_CLIPPING_402MS
-            'No scaling ... integration time = 402ms
-            chScale = (1 << TSL2561_LUX_CHSCALE)
-        End If
+        Select  _tsl2561IntegrationTime
+            Case TSL2561_INTEGRATIONTIME_13MS
+                clipThreshold = TSL2561_CLIPPING_13MS
+                chScale = TSL2561_LUX_CHSCALE_TINT0
+            Case TSL2561_INTEGRATIONTIME_101MS
+                clipThreshold = TSL2561_CLIPPING_101MS
+                chScale = TSL2561_LUX_CHSCALE_TINT1
+            Case TSL2561_INTEGRATIONTIME_402MS
+                clipThreshold = TSL2561_CLIPPING_402MS
+                'No scaling ... integration time = 402ms
+                chScale = (1 << TSL2561_LUX_CHSCALE)
+        End Select
         
         ' Return 65536 lux if the sensor is saturated
         If ((value.getBroadband() > clipThreshold) Or (value.getIr() > clipThreshold)) Then
@@ -432,25 +434,24 @@ Class TSL2561
         enable()
 
         ' Wait x ms for ADC to complete
-        If _tsl2561IntegrationTime = TSL2561_INTEGRATIONTIME_13MS Then
-            Thread.Delay(TSL2561_DELAY_INTTIME_13MS)
-        ElseIf _tsl2561IntegrationTime = TSL2561_INTEGRATIONTIME_101MS Then
-            Thread.Delay(TSL2561_DELAY_INTTIME_101MS)
-        ElseIf _tsl2561IntegrationTime = TSL2561_INTEGRATIONTIME_402MS Then
-            Thread.Delay(TSL2561_DELAY_INTTIME_402MS)
-        End If
+        Select _tsl2561IntegrationTime
+            Case TSL2561_INTEGRATIONTIME_13MS
+                Thread.Delay(TSL2561_DELAY_INTTIME_13MS)
+            Case TSL2561_INTEGRATIONTIME_101MS
+                Thread.Delay(TSL2561_DELAY_INTTIME_101MS)
+            Case TSL2561_INTEGRATIONTIME_402MS
+                Thread.Delay(TSL2561_DELAY_INTTIME_402MS)
+        End Select
 
         ' Reads a two byte value from channel 0 (visible + infrared)
         data_low = ReadSingleByte(TSL2561_COMMAND_BIT | TSL2561_REGISTER_CHAN0_LOW)
         data_high = ReadSingleByte(TSL2561_COMMAND_BIT | TSL2561_REGISTER_CHAN0_HIGH)
         data.setBroadband(data_high << 8 | data_low)
-        ' broadband = ReadInt16(TSL2561_COMMAND_BIT | TSL2561_WORD_BIT | TSL2561_REGISTER_CHAN0_LOW) // doesn't work yet
 
         ' Reads a two byte value from channel 1 (infrared)
         data_low = ReadSingleByte(TSL2561_COMMAND_BIT | TSL2561_REGISTER_CHAN1_LOW)
         data_low = ReadSingleByte(TSL2561_COMMAND_BIT | TSL2561_REGISTER_CHAN1_HIGH)
         data.setIr(data_high << 8 | data_low)
-        ' ir = ReadInt16(TSL2561_COMMAND_BIT | TSL2561_WORD_BIT | TSL2561_REGISTER_CHAN1_LOW) // doesn't work yet
 
         ' Turn the device off to save power
         disable()
@@ -482,30 +483,6 @@ Class TSL2561
         End If
         result = gData(0)
         
-        Return result
-    End Function    
-    
-    ' does not work, needs further investigation. Use ReadSingleByte for now.
-    Private Function ReadInt16(reg_addr As Byte) As Integer
-        Dim res_A As Byte
-        Dim res_B As Byte
-        Dim result As Integer
-        
-        gAddr.Clear()
-        gData.Clear()
-        gAddr.Add(reg_addr)     
-        gI2C.Write(gAddr, False)
-        gData = gI2C.Read(2, False)
-        
-        If gData = Nothing Then
-            gData = New ListOfByte()
-            Return Nothing
-        End If
-        res_A = gData(0)
-        res_B = gData(1)
-        
-        result = res_B << 8
-        result = result | res_A
         Return result
     End Function    
     
