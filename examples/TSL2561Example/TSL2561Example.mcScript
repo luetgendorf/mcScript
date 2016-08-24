@@ -1,0 +1,46 @@
+﻿' Pin modes
+Define PinMode Pin2 As DigitalOutput 
+Define PinMode Pin3 As DigitalOutput 
+Define PinMode Pin4 As DigitalOutput 
+Define PinMode Pin5 As DigitalOutput 
+Define PinMode Pin6 As DigitalOutput 
+Define PinMode Pin7 As DigitalOutput 
+Define PinMode Pin8 As DigitalOutput 
+
+Class TSL2561Example
+    
+    Shared mcUIDString As String 
+    Shared luminosity As TSL2561
+    Shared _init As Boolean
+    
+    Shared Event Boot()
+        Lplan.SetBeaconTime(10)
+        mcUIDString = Device.mcUID().ToString("X8")
+        luminosity = New TSL2561(TSL2561.TSL2561_ADDR_FLOAT)
+        luminosity.setIntegrationTime(TSL2561.TSL2561_INTEGRATIONTIME_402MS)
+        luminosity.enableAutoRegion(True)
+        _init = luminosity.begin()
+    End Event
+    
+    Shared Event ReportLuminosity() RaiseEvent Every 60 Seconds
+        Dim payload As ListOfByte = New ListOfByte
+        Dim payString As String = ""
+        
+        If _init = True Then
+            LedRed = True
+            Dim data As TSL2561Measurement = luminosity.getLuminosity()
+            Dim lux As Integer = luminosity.calculateLux(data)
+            Dim date As DateTime = DateTime.Now()
+            payString = date.ToString() + " BB: " + data.getBroadband.ToString() + " IR: " + data.getIr.ToString() + " LUX: " + lux.ToString()
+        Else
+            LedRed = False
+            payString = "Sensor not found." 
+        End If
+        payload.Add(payString)
+        ' Debug.Write("mcThings/" + mcUIDString + "/TSL2561Example/Report " + payString)
+        Lplan.Publish("mcThings/" + mcUIDString + "/TSL2561Example/Report", payload)
+        Thread.Sleep(1000)
+        Thread.ClearHardwareEvent()
+        LedRed = False
+    End Event
+End Class 
