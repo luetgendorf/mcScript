@@ -158,7 +158,7 @@ Class TSL2561
     Private _tsl2561Initialized As Boolean
     
     Public Sub New(addr As Byte)
-        gI2C = I2c.Create(I2C_HiGH_SPEED, Pin.SCL, Pin.SDA, addr)
+        gI2C = I2c.Create(I2C_NORMAL_SPEED, Pin.SCL, Pin.SDA, addr)
         Thread.Sleep(25000)
         gAddr = New ListOfByte()
         gData = New ListOfByte()
