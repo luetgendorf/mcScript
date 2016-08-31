@@ -450,7 +450,7 @@ Class TSL2561
 
         ' Reads a two byte value from channel 1 (infrared)
         data_low = ReadSingleByte(TSL2561_COMMAND_BIT | TSL2561_REGISTER_CHAN1_LOW)
-        data_low = ReadSingleByte(TSL2561_COMMAND_BIT | TSL2561_REGISTER_CHAN1_HIGH)
+        data_high = ReadSingleByte(TSL2561_COMMAND_BIT | TSL2561_REGISTER_CHAN1_HIGH)
         data.setIr(data_high << 8 | data_low)
 
         ' Turn the device off to save power
