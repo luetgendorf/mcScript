@@ -358,7 +358,7 @@ Class TSL2561
         End If
         
         ' Scale for gain (1x or 16x)
-        If _tsl2561Gain = TSL2561_GAIN_16X Then
+        If _tsl2561Gain = TSL2561_GAIN_1X Then
             chScale = chScale << 4
         End If
         
